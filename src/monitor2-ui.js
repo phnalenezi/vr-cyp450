@@ -661,7 +661,7 @@ AFRAME.registerComponent('monitor2-ui', {
 
     this.applyTextStyle(this.subtitleText, {
       position: '0 0.28 0.02',
-      width: 5.60,
+      width: 6,
       wrapCount: 40,
       scale: '0.88 0.88 0.88'
     });
