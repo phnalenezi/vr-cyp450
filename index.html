@@ -32,7 +32,7 @@
     </div>
   </div>
 
-  <a-scene background="color: #050816" renderer="antialias: true; colorManagement: true" shadow="type: pcfsoft"
+  <a-scene background="color: #050816" renderer="antialias: false; colorManagement: true" shadow="enabled: false"
     loading-screen="enabled: false" vr-mode-ui="enabled: true" cyp-scene-manager>
 
     <a-assets timeout="30000">
@@ -77,39 +77,11 @@
       <a-asset-item id="morphineModel" src="./assets/models/morphine.glb"></a-asset-item>
     </a-assets>
 
-    <a-entity id="ambientLight" light="type: ambient; intensity: 0.18; color: #c7d8ee"></a-entity>
+    <a-entity id="ambientLight" light="type: ambient; intensity: 0.22; color: #c7d8ee"></a-entity>
 
     <a-entity id="hemeSpotLight"
-      light="type: spot; intensity: 3.0; color: #ffffff; angle: 22; penumbra: 0.50; decay: 1.2; distance: 10; castShadow: true; shadowBias: -0.0008; shadowMapWidth: 2048; shadowMapHeight: 2048; target: #hemeLightTarget"
+      light="type: spot; intensity: 2.0; color: #ffffff; angle: 22; penumbra: 0.50; decay: 1.2; distance: 10; castShadow: false; target: #hemeLightTarget"
       position="0.35 2.80 0.55">
-    </a-entity>
-
-    <a-entity id="environmentLightTarget" position="31.4 13.2 -31.2" visible="false"></a-entity>
-
-    <a-entity id="envLightRig1" position="31.4 13.2 -31.2"
-      animation="property: rotation; to: 0 360 0; dur: 180000; easing: linear; loop: true">
-      <a-entity id="envSpotLight1"
-        light="type: spot; intensity: 1.25; color: #8fd8ff; angle: 42; penumbra: 0.65; decay: 1.0; distance: 120; target: #environmentLightTarget"
-        position="22 12 0">
-      </a-entity>
-    </a-entity>
-
-    <a-entity id="envLightRig2" position="31.4 13.2 -31.2" rotation="0 120 0"
-      animation="property: rotation; to: 0 -360 0; dur: 240000; easing: linear; loop: true">
-      <a-entity id="envSpotLight2"
-        light="type: spot; intensity: 1.05; color: #b8d4ff; angle: 48; penumbra: 0.68; decay: 1.0; distance: 120; target: #environmentLightTarget"
-        position="-18 9 16"
-        animation__float="property: position; from: -18 9 16; to: -18 13 16; dur: 26000; dir: alternate; easing: easeInOutSine; loop: true">
-      </a-entity>
-    </a-entity>
-
-    <a-entity id="envLightRig3" position="31.4 13.2 -31.2" rotation="0 240 0"
-      animation="property: rotation; to: 0 360 0; dur: 300000; easing: linear; loop: true">
-      <a-entity id="envSpotLight3"
-        light="type: spot; intensity: 0.95; color: #d8ecff; angle: 52; penumbra: 0.72; decay: 1.0; distance: 130; target: #environmentLightTarget"
-        position="0 16 -24"
-        animation__float="property: position; from: 0 16 -24; to: 0 11 -24; dur: 32000; dir: alternate; easing: easeInOutSine; loop: true">
-      </a-entity>
     </a-entity>
 
     <a-sky color="#060916"></a-sky>
@@ -127,17 +99,17 @@
     </a-entity>
 
     <a-entity id="environment" gltf-model="#environmentModel" position="31.4 13.2 -31.2" rotation="0 0 0"
-      scale="14 14 14" shadow="cast: false; receive: true"></a-entity>
+      scale="14 14 14"></a-entity>
 
     <a-entity id="focusRig" position="0 1.28 -1.15" rotation="0 0 0" scale="0.22 0.22 0.22">
       <a-cylinder id="focusBase" radius="0.35" height="0.01" color="#4a6c8f" opacity="0.0" visible="false"
         position="0 -0.22 0"></a-cylinder>
 
-      <a-entity id="cyp" gltf-model="#cypModel" position="0 0 0" rotation="0 18 0" scale="0.051 0.051 0.051"
-        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="cyp" gltf-model="#cypModel" position="0 0 0" rotation="0 18 0" scale="0.051 0.051 0.051">
+      </a-entity>
 
-      <a-entity id="heme" gltf-model="#hemeModel" position="0 0 0" rotation="5 0 0" scale="0.05 0.05 0.05"
-        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="heme" gltf-model="#hemeModel" position="0 0 0" rotation="5 0 0" scale="0.05 0.05 0.05">
+      </a-entity>
 
       <a-entity id="hemeLightTarget" position="0 0 0" visible="false"></a-entity>
 
@@ -193,11 +165,12 @@
     </a-entity>
 
     <a-entity id="monitorRig" position="0 0 -30.05" rotation="0 0 0" scale="7 7 7">
-      <a-entity id="monitor" gltf-model="#monitorModel" position="0 0 0" rotation="0 0 0" scale="1 1 1"
-        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="monitor" gltf-model="#monitorModel" position="0 0 0" rotation="0 0 0" scale="1 1 1">
+      </a-entity>
 
       <a-entity id="monitor2" gltf-model="#monitor2Model" position="0.215 0.197 3.880" rotation="0 -120 -64"
-        scale="0.017 0.018 0.017" shadow="cast: true; receive: true"></a-entity>
+        scale="0.017 0.018 0.017">
+      </a-entity>
 
       <a-entity id="monitorUiAnchor" position="0.000 0.175 0.040" rotation="0 0 0" scale="0.150 0.150 0.150">
         <a-entity id="monitor1UiRoot" monitor1-ui position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
@@ -214,65 +187,73 @@
         <a-text id="inducerLabel" value="INDUCER" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
           align="center" color="#8cf0a5" width="2.8"></a-text>
 
-        <a-entity id="inducerBox" gltf-model="#boxIndModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700"
-          shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="inducerBox" gltf-model="#boxIndModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700">
+        </a-entity>
 
         <a-entity id="inducerEnzyme" gltf-model="#enzymeGreenModel" position="-0.006 1.020 0.060" rotation="0 0 0"
-          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+          scale="0.001 0.001 0.001">
+        </a-entity>
       </a-entity>
 
       <a-entity id="inducerLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
 
       <a-entity id="inducerSpotLight"
-        light="type: spot; intensity: 2.2; color: #8cf0a5; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #inducerLightTarget"
+        light="type: spot; intensity: 1.35; color: #8cf0a5; angle: 30; penumbra: 0.65; decay: 1.4; distance: 3.0; castShadow: false; target: #inducerLightTarget"
         position="0.000 1.650 0.550">
       </a-entity>
 
       <a-entity id="rifampcinDrug" gltf-model="#rifampcinModel" position="-1.070 1.020 -0.040" rotation="0 0 0"
-        scale="0.0032 0.0032 0.0032" shadow="cast: true; receive: true"></a-entity>
+        scale="0.0032 0.0032 0.0032">
+      </a-entity>
 
       <a-entity id="phenytoinDrug" gltf-model="#phenytoinModel" position="1.110 1.010 -0.040" rotation="0 0 0"
-        scale="0.0065 0.0065 0.0065" shadow="cast: true; receive: true"></a-entity>
+        scale="0.0065 0.0065 0.0065">
+      </a-entity>
 
       <a-entity id="normalBoxGroup" position="0.000 0.000 0.000" rotation="0 -180 0" scale="1 1 1">
         <a-text id="prodrugLabel" value="PRODRUG" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
           align="center" color="#ffffff" width="2.8"></a-text>
 
-        <a-entity id="normalBox" gltf-model="#boxProModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700"
-          shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="normalBox" gltf-model="#boxProModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700">
+        </a-entity>
 
         <a-entity id="normalEnzyme" gltf-model="#enzymeWhiteModel" position="-0.006 1.020 0.060" rotation="0 0 0"
-          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+          scale="0.001 0.001 0.001">
+        </a-entity>
       </a-entity>
 
       <a-entity id="normalLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
 
       <a-entity id="normalSpotLight"
-        light="type: spot; intensity: 2.15; color: #dfe9ff; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #normalLightTarget"
+        light="type: spot; intensity: 1.3; color: #dfe9ff; angle: 30; penumbra: 0.65; decay: 1.4; distance: 3.0; castShadow: false; target: #normalLightTarget"
         position="0.000 1.650 0.550">
       </a-entity>
 
       <a-entity id="codeineDrug" gltf-model="#codeineModel" position="0.060 1.020 -0.030" rotation="0 0 0"
-        scale="0.002 0.002 0.002" shadow="cast: true; receive: true"></a-entity>
+        scale="0.002 0.002 0.002">
+      </a-entity>
 
       <a-entity id="morphineDrug" gltf-model="#morphineModel" position="0.060 1.020 -0.030" rotation="0 0 0"
-        scale="0.002 0.002 0.002" shadow="cast: true; receive: true"></a-entity>
+        scale="0.002 0.002 0.002">
+      </a-entity>
 
       <a-entity id="inhibitorBoxGroup" position="1.100 0.000 0.000" rotation="0 -180 0" scale="1 1 1">
         <a-text id="inhibitorLabel" value="INHIBITOR" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
           align="center" color="#ff9b9b" width="2.8"></a-text>
 
         <a-entity id="inhibitorBox" gltf-model="#boxInhModel" position="0 0 0" rotation="0 0 0"
-          scale="0.700 0.700 0.700" shadow="cast: true; receive: true"></a-entity>
+          scale="0.700 0.700 0.700">
+        </a-entity>
 
         <a-entity id="inhibitorEnzyme" gltf-model="#enzymeBlueModel" position="-0.006 1.020 0.060" rotation="0 0 0"
-          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+          scale="0.001 0.001 0.001">
+        </a-entity>
       </a-entity>
 
       <a-entity id="inhibitorLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
 
       <a-entity id="inhibitorSpotLight"
-        light="type: spot; intensity: 2.2; color: #ff9b9b; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #inhibitorLightTarget"
+        light="type: spot; intensity: 1.35; color: #ff9b9b; angle: 30; penumbra: 0.65; decay: 1.4; distance: 3.0; castShadow: false; target: #inhibitorLightTarget"
         position="0.000 1.650 0.550">
       </a-entity>
     </a-entity>
