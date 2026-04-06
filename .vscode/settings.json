@@ -1,0 +1,8 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true
+  },
+  "editor.wordWrap": "on",
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true
+}

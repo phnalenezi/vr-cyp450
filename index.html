@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Immersive Visualization of Cytochrome P450–Mediated Drug Metabolism</title>
+
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+  <link rel="stylesheet" href="./src/style.css" />
+
+  <script src="./src/monitor1-ui.js" defer></script>
+  <script src="./src/monitor2-ui.js" defer></script>
+  <script src="./src/glass-box.js" defer></script>
+  <script src="./src/app.js" defer></script>
+  <script src="./src/codeine-morphine-loop.js" defer></script>
+  <script src="./src/box-spotlights.js" defer></script>
+  <script src="./src/box-image-panels.js" defer></script>
+</head>
+
+<body>
+  <div id="loading-overlay">
+    <div class="loading-card">
+      <h1>Immersive Visualization of Cytochrome P450–Mediated Drug Metabolism</h1>
+      <p>Exploring Binding, Oxidation, and Molecular Transformation Inside the Liver</p>
+      <p class="small">
+        Desktop preview: drag to look, use WASD to move, use <strong>R</strong> / <strong>F</strong> to move up and
+        down, and click the floating buttons.<br />
+        Meta Quest: open a secure HTTPS link, then press <strong>Enter VR</strong>.
+      </p>
+    </div>
+  </div>
+
+  <a-scene background="color: #050816" renderer="antialias: true; colorManagement: true" shadow="type: pcfsoft"
+    loading-screen="enabled: false" vr-mode-ui="enabled: true" cyp-scene-manager>
+
+    <a-assets timeout="30000">
+      <a-asset-item id="environmentModel" src="./assets/models/environment.glb"></a-asset-item>
+      <a-asset-item id="cypModel" src="./assets/models/cyp450.glb"></a-asset-item>
+      <a-asset-item id="hemeModel" src="./assets/models/heme.glb"></a-asset-item>
+      <a-asset-item id="monitorModel" src="./assets/models/monitor.glb"></a-asset-item>
+      <a-asset-item id="monitor2Model" src="./assets/models/monitor2.glb"></a-asset-item>
+      <a-asset-item id="apapStaticModel" src="./assets/models/acetaminophenstatic.glb"></a-asset-item>
+
+      <a-asset-item id="part_OPhenol" src="./assets/models/apap_O_phenol.glb"></a-asset-item>
+      <a-asset-item id="part_HPhenol" src="./assets/models/apap_H_phenol.glb"></a-asset-item>
+      <a-asset-item id="part_NAmide" src="./assets/models/apap_N_amide.glb"></a-asset-item>
+      <a-asset-item id="part_HAmide" src="./assets/models/apap_H_amide.glb"></a-asset-item>
+
+      <a-asset-item id="part_SigmaApapOH" src="./assets/models/sigma_apap_O_H.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaApapC1O" src="./assets/models/sigma_apap_C1O.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaApap34" src="./assets/models/sigma_apap_34.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaApapC4N" src="./assets/models/sigma_apap_C4N.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaApapNH" src="./assets/models/sigma_apap_N_H.glb"></a-asset-item>
+
+      <a-asset-item id="part_SigmaRing1" src="./assets/models/sigmaring1.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaRing2" src="./assets/models/sigmaring2.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaRing3" src="./assets/models/sigmaring3.glb"></a-asset-item>
+      <a-asset-item id="part_SigmaRing4" src="./assets/models/sigmaring4.glb"></a-asset-item>
+
+      //<a-asset-item id="boxIndModel" src="./assets/models/boxind.glb"></a-asset-item>
+      //<a-asset-item id="boxProModel" src="./assets/models/boxpro.glb"></a-asset-item>
+      <a-asset-item id="boxInhModel" src="./assets/models/boxinh.glb"></a-asset-item>
+
+      <a-asset-item id="enzymeGreenModel" src="./assets/models/enzymegreen.glb"></a-asset-item>
+      <a-asset-item id="enzymeWhiteModel" src="./assets/models/enzymewhite.glb"></a-asset-item>
+      <a-asset-item id="enzymeBlueModel" src="./assets/models/enzymeblue.glb"></a-asset-item>
+      <img id="inhImage" src="./assets/icons/inh.png" alt="Inhibitor image" />
+      <img id="indImage" src="./assets/icons/ind.png" alt="Inducer image" />
+      <img id="proImage" src="./assets/icons/pro.png" alt="Prodrug image" />
+      <a-asset-item id="rifampcinModel" src="./assets/models/rifampcin.glb"></a-asset-item>
+      <a-asset-item id="phenytoinModel" src="./assets/models/phenytoin.glb"></a-asset-item>
+      <a-asset-item id="codeineModel" src="./assets/models/codeine.glb"></a-asset-item>
+      <a-asset-item id="morphineModel" src="./assets/models/morphine.glb"></a-asset-item>
+    </a-assets>
+
+    <a-entity id="ambientLight" light="type: ambient; intensity: 0.18; color: #c7d8ee"></a-entity>
+
+    <a-entity id="hemeSpotLight"
+      light="type: spot; intensity: 3.0; color: #ffffff; angle: 22; penumbra: 0.50; decay: 1.2; distance: 10; castShadow: true; shadowBias: -0.0008; shadowMapWidth: 2048; shadowMapHeight: 2048; target: #hemeLightTarget"
+      position="0.35 2.80 0.55">
+    </a-entity>
+
+    <a-entity id="environmentLightTarget" position="31.4 13.2 -31.2" visible="false"></a-entity>
+
+    <a-entity id="envLightRig1" position="31.4 13.2 -31.2"
+      animation="property: rotation; to: 0 360 0; dur: 180000; easing: linear; loop: true">
+      <a-entity id="envSpotLight1"
+        light="type: spot; intensity: 1.25; color: #8fd8ff; angle: 42; penumbra: 0.65; decay: 1.0; distance: 120; target: #environmentLightTarget"
+        position="22 12 0">
+      </a-entity>
+    </a-entity>
+
+    <a-entity id="envLightRig2" position="31.4 13.2 -31.2" rotation="0 120 0"
+      animation="property: rotation; to: 0 -360 0; dur: 240000; easing: linear; loop: true">
+      <a-entity id="envSpotLight2"
+        light="type: spot; intensity: 1.05; color: #b8d4ff; angle: 48; penumbra: 0.68; decay: 1.0; distance: 120; target: #environmentLightTarget"
+        position="-18 9 16"
+        animation__float="property: position; from: -18 9 16; to: -18 13 16; dur: 26000; dir: alternate; easing: easeInOutSine; loop: true">
+      </a-entity>
+    </a-entity>
+
+    <a-entity id="envLightRig3" position="31.4 13.2 -31.2" rotation="0 240 0"
+      animation="property: rotation; to: 0 360 0; dur: 300000; easing: linear; loop: true">
+      <a-entity id="envSpotLight3"
+        light="type: spot; intensity: 0.95; color: #d8ecff; angle: 52; penumbra: 0.72; decay: 1.0; distance: 130; target: #environmentLightTarget"
+        position="0 16 -24"
+        animation__float="property: position; from: 0 16 -24; to: 0 11 -24; dur: 32000; dir: alternate; easing: easeInOutSine; loop: true">
+      </a-entity>
+    </a-entity>
+
+    <a-sky color="#060916"></a-sky>
+
+    <a-entity id="rig" position="0 0 -0.20" movement-controls="controls: gamepad, keyboard; speed: 0.0125; fly: true">
+      <a-entity id="camera" camera look-controls="pointerLockEnabled: true" position="0 1.6 0">
+        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable; far: 20"></a-entity>
+      </a-entity>
+
+      <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable; far: 20"
+        line="color: #7dd3fc; opacity: 0.95"></a-entity>
+
+      <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable; far: 20"
+        line="color: #7dd3fc; opacity: 0.95"></a-entity>
+    </a-entity>
+
+    <a-entity id="environment" gltf-model="#environmentModel" position="31.4 13.2 -31.2" rotation="0 0 0"
+      scale="14 14 14" shadow="cast: false; receive: true"></a-entity>
+
+    <a-entity id="focusRig" position="0 1.28 -1.15" rotation="0 0 0" scale="0.22 0.22 0.22">
+      <a-cylinder id="focusBase" radius="0.35" height="0.01" color="#4a6c8f" opacity="0.0" visible="false"
+        position="0 -0.22 0"></a-cylinder>
+
+      <a-entity id="cyp" gltf-model="#cypModel" position="0 0 0" rotation="0 18 0" scale="0.051 0.051 0.051"
+        shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="heme" gltf-model="#hemeModel" position="0 0 0" rotation="5 0 0" scale="0.05 0.05 0.05"
+        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="hemeLightTarget" position="0 0 0" visible="false"></a-entity>
+
+      <a-entity id="drugGroup" position="0 0 0" rotation="0 0 0" scale="1 1 1">
+        <a-entity id="apapStatic" gltf-model="#apapStaticModel" position="-0.005 0.090 0.210"
+          rotation="86.000 4.000 14.000" scale="0.05 0.05 0.05"></a-entity>
+
+        <a-entity id="partsGroup" position="0.000 0.090 0.210" rotation="24.000 -28.000 14.000" scale="1 1 1">
+          <a-entity id="apapOPhenol" gltf-model="#part_OPhenol" position="0.016 0.191 0.129"
+            rotation="2.000 0.000 0.000" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="apapHPhenol" gltf-model="#part_HPhenol" position="-0.027 0.130 0.107"
+            rotation="0.000 0.000 0.000" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="apapNAmide" gltf-model="#part_NAmide" position="0.000 0.000 0.000" rotation="0.000 0.000 0.000"
+            scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="apapHAmide" gltf-model="#part_HAmide" position="0.014 -0.104 -0.049"
+            rotation="0.000 0.000 0.000" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="sigmaApapOH" gltf-model="#part_SigmaApapOH" position="-0.552 0.110 0.149"
+            rotation="51.204 -29.838 62.037" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="sigmaApapC1O" gltf-model="#part_SigmaApapC1O" position="-0.486 0.156 0.095"
+            rotation="-11.249 -71.575 12.117" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="sigmaApap34" gltf-model="#part_SigmaApap34" position="-0.285 0.190 -0.005"
+            rotation="8.152 -69.171 29.375" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="sigmaRing1" gltf-model="#part_SigmaRing1" position="-0.361 0.121 0.069"
+            rotation="-48.261 -64.777 167.948" scale="0.090 0.090 0.090" visible="true"></a-entity>
+
+          <a-entity id="sigmaRing2" gltf-model="#part_SigmaRing2" position="-0.352 0.117 0.066"
+            rotation="-48.261 -64.777 167.948" scale="0.090 0.090 0.090" visible="true"></a-entity>
+
+          <a-entity id="sigmaRing3" gltf-model="#part_SigmaRing3" position="-0.160 0.155 -0.028"
+            rotation="-116.049 -21.361 98.103" scale="0.090 0.090 0.090" visible="true"></a-entity>
+
+          <a-entity id="sigmaRing4" gltf-model="#part_SigmaRing4" position="-0.170 0.158 -0.028"
+            rotation="-116.049 -21.361 98.103" scale="0.090 0.090 0.090" visible="true"></a-entity>
+
+          <a-entity id="sigmaApapC4N" gltf-model="#part_SigmaApapC4N" position="0.003 0.002 0.002"
+            rotation="-114.387 20.079 20.570" scale="0.05 0.05 0.05"></a-entity>
+
+          <a-entity id="sigmaApapNH" gltf-model="#part_SigmaApapNH" position="0.001 0.001 0.002"
+            rotation="30.981 -26.552 -124.129" scale="0.05 0.05 0.05"></a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-entity id="activeSiteRing" geometry="primitive: torus; radius: 0.065; radiusTubular: 0.0025"
+        material="color: #7dd3fc; emissive: #7dd3fc; emissiveIntensity: 0.9; opacity: 0.42; transparent: true"
+        position="0 0 0" rotation="90 0 0" visible="false"></a-entity>
+    </a-entity>
+
+    <a-entity id="monitorRig" position="0 0 -30.05" rotation="0 0 0" scale="7 7 7">
+      <a-entity id="monitor" gltf-model="#monitorModel" position="0 0 0" rotation="0 0 0" scale="1 1 1"
+        shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="monitor2" gltf-model="#monitor2Model" position="0.215 0.197 3.880" rotation="0 -120 -64"
+        scale="0.017 0.018 0.017" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="monitorUiAnchor" position="0.000 0.175 0.040" rotation="0 0 0" scale="0.150 0.150 0.150">
+        <a-entity id="monitor1UiRoot" monitor1-ui position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
+      </a-entity>
+
+      <a-entity id="monitor2UiAnchor" position="0.205 0.159 3.896" rotation="-26 -30 0" scale="0.098 0.089 0.150">
+        <a-entity id="monitor2UiRoot" monitor2-ui position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
+      </a-entity>
+    </a-entity>
+
+    <a-entity id="comparisonRig" position="0.000 -0.053 -2.150" rotation="0 0 0" scale="1 1 1">
+
+      <a-entity id="inducerBoxGroup" position="-1.100 0.000 0.000" rotation="0 -180 0" scale="1 1 1">
+        <a-text id="inducerLabel" value="INDUCER" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
+          align="center" color="#8cf0a5" width="2.8"></a-text>
+
+        <a-entity id="inducerBox" gltf-model="#boxIndModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700"
+          shadow="cast: true; receive: true"></a-entity>
+
+        <a-entity id="inducerEnzyme" gltf-model="#enzymeGreenModel" position="-0.006 1.020 0.060" rotation="0 0 0"
+          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+      <a-entity id="inducerLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
+
+      <a-entity id="inducerSpotLight"
+        light="type: spot; intensity: 2.2; color: #8cf0a5; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #inducerLightTarget"
+        position="0.000 1.650 0.550">
+      </a-entity>
+
+      <a-entity id="rifampcinDrug" gltf-model="#rifampcinModel" position="-1.070 1.020 -0.040" rotation="0 0 0"
+        scale="0.0032 0.0032 0.0032" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="phenytoinDrug" gltf-model="#phenytoinModel" position="1.110 1.010 -0.040" rotation="0 0 0"
+        scale="0.0065 0.0065 0.0065" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="normalBoxGroup" position="0.000 0.000 0.000" rotation="0 -180 0" scale="1 1 1">
+        <a-text id="prodrugLabel" value="PRODRUG" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
+          align="center" color="#ffffff" width="2.8"></a-text>
+
+        <a-entity id="normalBox" gltf-model="#boxProModel" position="0 0 0" rotation="0 0 0" scale="0.700 0.700 0.700"
+          shadow="cast: true; receive: true"></a-entity>
+
+        <a-entity id="normalEnzyme" gltf-model="#enzymeWhiteModel" position="-0.006 1.020 0.060" rotation="0 0 0"
+          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+
+      <a-entity id="normalLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
+
+      <a-entity id="normalSpotLight"
+        light="type: spot; intensity: 2.15; color: #dfe9ff; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #normalLightTarget"
+        position="0.000 1.650 0.550">
+      </a-entity>
+
+      <a-entity id="codeineDrug" gltf-model="#codeineModel" position="0.060 1.020 -0.030" rotation="0 0 0"
+        scale="0.002 0.002 0.002" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="morphineDrug" gltf-model="#morphineModel" position="0.060 1.020 -0.030" rotation="0 0 0"
+        scale="0.002 0.002 0.002" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="inhibitorBoxGroup" position="1.100 0.000 0.000" rotation="0 -180 0" scale="1 1 1">
+        <a-text id="inhibitorLabel" value="INHIBITOR" position="0 1.250 0.000" rotation="0 180 0" scale="1 1 1"
+          align="center" color="#ff9b9b" width="2.8"></a-text>
+
+        <a-entity id="inhibitorBox" gltf-model="#boxInhModel" position="0 0 0" rotation="0 0 0"
+          scale="0.700 0.700 0.700" shadow="cast: true; receive: true"></a-entity>
+
+        <a-entity id="inhibitorEnzyme" gltf-model="#enzymeBlueModel" position="-0.006 1.020 0.060" rotation="0 0 0"
+          scale="0.001 0.001 0.001" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+      <a-entity id="inhibitorLightTarget" position="0.000 0.820 0.030" visible="false"></a-entity>
+
+      <a-entity id="inhibitorSpotLight"
+        light="type: spot; intensity: 2.2; color: #ff9b9b; angle: 34; penumbra: 0.65; decay: 1.4; distance: 3.2; target: #inhibitorLightTarget"
+        position="0.000 1.650 0.550">
+      </a-entity>
+    </a-entity>
+
+
+    <!-- Inducer box -->
+    <a-entity id="inducerBox" gltf-model="#boxIndModel" position="0 1.45 -2.4" rotation="0 0 0" scale="0.45 0.45 0.45">
+
+      <a-plane id="indImagePanel" src="#indImage" position="0 0.42 0.22" rotation="0 0 0" width="0.55" height="0.35"
+        material="shader: flat; transparent: true; side: double;">
+      </a-plane>
+    </a-entity>
+
+    <!-- Prodrug box -->
+    <a-entity id="prodrugBox" gltf-model="#boxProModel" position="0.9 1.45 -2.4" rotation="0 0 0"
+      scale="0.45 0.45 0.45">
+
+      <a-plane id="proImagePanel" src="#proImage" position="0 0.42 0.22" rotation="0 0 0" width="0.55" height="0.35"
+        material="shader: flat; transparent: true; side: double;">
+      </a-plane>
+    </a-entity>
+
+    <a-text value="INHIBITOR" position="-0.9 1.0 -2.15" align="center" color="#FF8A8A" width="2.5">
+    </a-text>
+
+    <a-text value="INDUCER" position="0 1.0 -2.15" align="center" color="#8AFFC1" width="2.5">
+    </a-text>
+
+    <a-text value="PRODRUG" position="0.9 1.0 -2.15" align="center" color="#8AB4FF" width="2.5">
+    </a-text>
+
+    </a-entity>
+  </a-scene>
+</body>
+
+</html>
