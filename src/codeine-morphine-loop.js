@@ -8,15 +8,15 @@
       morphineModelMatch: 'morphine',
 
       codeine: {
-        startPosition: '0.184 1.066 -0.030',
-        bindPosition: '0.024 1.046 -0.030',
+        startPosition: '0.35 1.6 -0.030',
+        bindPosition: '0.024 1.58 -0.030',
         rotation: '0 -1 -11',
         scale: '0.004 0.004 0.004'
       },
 
       morphine: {
-        bindPosition: '0.025 1.046 -0.030',
-        exitPosition: '-0.225 1.065 -0.030',
+        bindPosition: '0.025 1.58 -0.030',
+        exitPosition: '-0.255 1.6 -0.030',
         rotation: '0 0 0',
         scale: '0.004 0.004 0.004'
       },

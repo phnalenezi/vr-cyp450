@@ -181,6 +181,18 @@ AFRAME.registerComponent('monitor2-ui', {
 
     this.buildPanel();
     this.render();
+
+    window.monitor2SetScreen = (screenName) => {
+      this.setScreen(screenName);
+    };
+
+    window.monitor2SetMetabolismStep = (stepIndex) => {
+      this.setMetabolismStep(stepIndex);
+    };
+
+    window.monitor2SetSettingsValues = (envBrightness, cypOpacity) => {
+      this.setSettingsValues(envBrightness, cypOpacity);
+    };
   },
 
   buildPanel() {
@@ -327,10 +339,10 @@ AFRAME.registerComponent('monitor2-ui', {
 
     this.cards = [];
     const cardSlots = [
-      { x: -1.36, y: -0.54 + 0.3 },
-      { x: 1.36, y: -0.54 + 0.3 },
-      { x: -1.36, y: -1.18 + 0.3 },
-      { x: 1.36, y: -1.18 + 0.3 }
+      { x: -1.36, y: -0.24 },
+      { x: 1.36, y: -0.24 },
+      { x: -1.36, y: -0.88 },
+      { x: 1.36, y: -0.88 }
     ];
 
     cardSlots.forEach((slot) => {
@@ -443,13 +455,14 @@ AFRAME.registerComponent('monitor2-ui', {
     });
     body.setAttribute('scale', '0.84 0.84 0.84');
 
-    const clickHandler = () => {
+    const clickHandler = (evt) => {
+      if (evt) evt.stopPropagation();
       if (group._targetScreen) {
         this.setScreen(group._targetScreen);
       }
     };
 
-    [bg, accent, title, body].forEach((el) => {
+    [backGlow, bg, accent, title, body].forEach((el) => {
       el.setAttribute('class', 'clickable');
       el.addEventListener('click', clickHandler);
       el.addEventListener('mouseenter', () => {
@@ -501,13 +514,14 @@ AFRAME.registerComponent('monitor2-ui', {
     });
     text.setAttribute('scale', '0.90 0.90 0.90');
 
-    const clickHandler = () => {
+    const clickHandler = (evt) => {
+      if (evt) evt.stopPropagation();
       if (group._targetScreen) {
         this.setScreen(group._targetScreen);
       }
     };
 
-    [bg, text].forEach((el) => {
+    [glow, bg, text].forEach((el) => {
       el.setAttribute('class', 'clickable');
       el.addEventListener('click', clickHandler);
       el.addEventListener('mouseenter', () => {
@@ -679,7 +693,7 @@ AFRAME.registerComponent('monitor2-ui', {
       position: '0 0.30 0.02',
       width: 2.55,
       wrapCount: 24,
-      scale: '1.0 1.0 01.0'
+      scale: '1 1 1'
     });
 
     this.applyTextStyle(this.bodyText, {
@@ -694,6 +708,36 @@ AFRAME.registerComponent('monitor2-ui', {
       width: 5.15,
       wrapCount: 42,
       scale: '0.72 0.72 0.72'
+    });
+  },
+
+  useClinicalImpactLayout() {
+    this.applyTextStyle(this.titleText, {
+      position: '0 0.74 0.02',
+      width: 3.2,
+      wrapCount: 24,
+      scale: '1.00 1.00 1.00'
+    });
+
+    this.applyTextStyle(this.subtitleText, {
+      position: '0 0.42 0.02',
+      width: 2.9,
+      wrapCount: 28,
+      scale: '0.88 0.88 0.88'
+    });
+
+    this.applyTextStyle(this.bodyText, {
+      position: '0 -0.06 0.02',
+      width: 5.0,
+      wrapCount: 40,
+      scale: '0.82 0.82 0.82'
+    });
+
+    this.applyTextStyle(this.footerText, {
+      position: '0 -0.92 0.02',
+      width: 4.6,
+      wrapCount: 34,
+      scale: '0.68 0.68 0.68'
     });
   },
 
@@ -949,6 +993,31 @@ AFRAME.registerComponent('monitor2-ui', {
       return;
     }
 
+    if (screen === 'metabolism_intro') {
+      this.setAccent('#ffb45c');
+      this.useDetailLayout();
+      this.setTextVisibility({
+        pill: true,
+        title: true,
+        subtitle: true,
+        body: true,
+        footer: true
+      });
+
+      this.setTextBlock({
+        pill: 'METABOLISM INTRO',
+        title: 'Drug Metabolism in 3D',
+        subtitle: 'Why this lesson matters',
+        body:
+          'Drugs interact with enzymes in a 3D space.\n\n' +
+          'Their shape and orientation help determine whether they bind correctly inside the active site.\n\n' +
+          'CYP450 enzymes can inactivate drugs, activate drugs, or create toxic metabolites.',
+        footer: 'Use NEXT STEP on Monitor 1 to begin the metabolism sequence.'
+      });
+
+      return;
+    }
+
     if (screen === 'metabolism') {
       const step = this.metabolismSteps[this.state.stepIndex] || this.metabolismSteps[0];
 
@@ -971,6 +1040,33 @@ AFRAME.registerComponent('monitor2-ui', {
       });
 
       this.showProgress(this.state.stepIndex, this.metabolismSteps.length);
+      return;
+    }
+
+    if (screen === 'metabolism_clinical_impact') {
+      this.setAccent('#ff8c5a');
+      this.useClinicalImpactLayout();
+      this.setTextVisibility({
+        pill: true,
+        title: true,
+        subtitle: true,
+        body: true,
+        footer: true
+      });
+
+      this.setTextBlock({
+        pill: 'CLINICAL IMPACT',
+        title: 'Why this matters clinically',
+        subtitle: 'From mechanism to patient risk',
+        body:
+          'Acetaminophen can be converted into NAPQI.\n\n' +
+          'NAPQI is a toxic metabolite.\n\n' +
+          'High levels can cause liver damage.',
+        footer:
+          'CYP450 activity affects drug safety.\n\n' +
+          'Use BACK or RESTART to continue.'
+      });
+
       return;
     }
 
@@ -1000,7 +1096,7 @@ AFRAME.registerComponent('monitor2-ui', {
         this.envBar,
         'Environment brightness',
         `${envPercent}%`,
-        Math.max(0, Math.min(1, this.state.envBrightness / 1.7))
+        Math.max(0, Math.min(1, this.state.envBrightness))
       );
 
       this.setBar(
@@ -1062,9 +1158,15 @@ AFRAME.registerComponent('monitor2-ui', {
 
   setSettingsValues(envBrightness, cypOpacity) {
     this.state.envBrightness =
-      typeof envBrightness === 'number' ? envBrightness : this.state.envBrightness;
+      typeof envBrightness === 'number'
+        ? Math.max(0, Math.min(1, envBrightness))
+        : this.state.envBrightness;
+
     this.state.cypOpacity =
-      typeof cypOpacity === 'number' ? cypOpacity : this.state.cypOpacity;
+      typeof cypOpacity === 'number'
+        ? Math.max(0, Math.min(1, cypOpacity))
+        : this.state.cypOpacity;
+
     this.render();
   }
 });

@@ -1,12 +1,26 @@
 const MONITOR1_UI_EDIT = {
   panelWidth: 1.52,
   panelHeight: 0.98,
+
+  settingsCardY: -0.05,
+  settingsCardWidth: 1.20,
+  settingsCardHeight: 0.26,
+
+  settingsBarTrackWidth: 0.86,
+  settingsBarTrackHeight: 0.018,
+
+  envLabelY: 0.035,
+  envBarY: -0.01,
+
+  cypLabelY: -0.055,
+  cypBarY: -0.10,
 };
 
 const MONITOR1_THEME = {
   panel: '#07131d',
   panelSoft: '#0d1d2a',
   accent: '#72e7ff',
+  accentWarm: '#ffb25e',
   title: '#ecfbff',
   subtitle: '#9fefff',
   body: '#c9efff',
@@ -16,6 +30,7 @@ const MONITOR1_THEME = {
   buttonText: '#eefcff',
   badge: '#0d3140',
   card: '#0a1a26',
+  track: '#173346',
 };
 
 const MONITOR1_STEP_TITLES = [
@@ -39,6 +54,14 @@ function m1CreateEntity(tag, attrs = {}) {
   return el;
 }
 
+function m1Clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function m1Percent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
 AFRAME.registerComponent('monitor1-ui', {
   init() {
     this.screen = 'start';
@@ -56,6 +79,10 @@ AFRAME.registerComponent('monitor1-ui', {
     window.monitor1SetMetabolismStep = (stepIndex) => {
       this.setMetabolismStep(stepIndex);
     };
+
+    window.monitor1SetSettingsValues = (environmentBrightness, cypOpacity) => {
+      this.setSettingsValues(environmentBrightness, cypOpacity);
+    };
   },
 
   buildUi() {
@@ -70,7 +97,7 @@ AFRAME.registerComponent('monitor1-ui', {
       color: MONITOR1_THEME.accent,
       opacity: 0.14,
       shader: 'flat',
-      position: '0 -0.0 -0.002',
+      position: '0 0 -0.002',
     });
 
     this.panel = m1CreateEntity('a-plane', {
@@ -123,14 +150,13 @@ AFRAME.registerComponent('monitor1-ui', {
       visible: false,
     });
 
-
-
     this.stepBadgeText = m1CreateEntity('a-entity', {
       position: '0 0.355 0.004',
       visible: false,
     });
 
     this.previewCard = this.createPreviewCard();
+    this.settingsCard = this.createSettingsCard();
     this.buttonGroup = m1CreateEntity('a-entity', { position: '0 0 0.003' });
 
     this.el.appendChild(this.panelBack);
@@ -144,6 +170,7 @@ AFRAME.registerComponent('monitor1-ui', {
     this.el.appendChild(this.stepBadgeBack);
     this.el.appendChild(this.stepBadgeText);
     this.el.appendChild(this.previewCard.group);
+    this.el.appendChild(this.settingsCard.group);
     this.el.appendChild(this.buttonGroup);
   },
 
@@ -205,7 +232,8 @@ AFRAME.registerComponent('monitor1-ui', {
       group.setAttribute('scale', '1 1 1');
     };
 
-    const clickHandler = () => {
+    const clickHandler = (evt) => {
+      if (evt) evt.stopPropagation();
       if (!group._action) return;
       this.handleAction(group._action);
     };
@@ -213,6 +241,10 @@ AFRAME.registerComponent('monitor1-ui', {
     [group, glow, back, line, title, body].forEach((el) => {
       el.addEventListener('mouseenter', hoverOn);
       el.addEventListener('mouseleave', hoverOff);
+    });
+
+    [glow, back, line, title, body].forEach((el) => {
+      el.setAttribute('class', 'clickable');
       el.addEventListener('click', clickHandler);
     });
 
@@ -223,6 +255,102 @@ AFRAME.registerComponent('monitor1-ui', {
     group.appendChild(body);
 
     return { group, glow, back, line, title, body };
+  },
+
+  createSettingsCard() {
+    const group = m1CreateEntity('a-entity', {
+      position: `0 ${MONITOR1_UI_EDIT.settingsCardY} 0.003`,
+      visible: false,
+    });
+
+    const glow = m1CreateEntity('a-plane', {
+      width: MONITOR1_UI_EDIT.settingsCardWidth + 0.04,
+      height: MONITOR1_UI_EDIT.settingsCardHeight + 0.04,
+      color: MONITOR1_THEME.accent,
+      opacity: 0.08,
+      shader: 'flat',
+      position: '0 0 -0.001',
+    });
+
+    const back = m1CreateEntity('a-plane', {
+      width: MONITOR1_UI_EDIT.settingsCardWidth,
+      height: MONITOR1_UI_EDIT.settingsCardHeight,
+      color: MONITOR1_THEME.card,
+      opacity: 0.96,
+      shader: 'flat',
+      position: '0 0 0',
+    });
+
+    const title = m1CreateEntity('a-entity', {
+      position: '0 0.080 0.002',
+    });
+
+    const envLabel = m1CreateEntity('a-entity', {
+      position: `0 ${MONITOR1_UI_EDIT.envLabelY} 0.002`,
+    });
+
+    const envTrack = m1CreateEntity('a-plane', {
+      width: MONITOR1_UI_EDIT.settingsBarTrackWidth,
+      height: MONITOR1_UI_EDIT.settingsBarTrackHeight,
+      color: MONITOR1_THEME.track,
+      opacity: 1,
+      shader: 'flat',
+      position: `0 ${MONITOR1_UI_EDIT.envBarY} 0.001`,
+    });
+
+    const envFill = m1CreateEntity('a-plane', {
+      width: 0.001,
+      height: MONITOR1_UI_EDIT.settingsBarTrackHeight,
+      color: MONITOR1_THEME.accent,
+      opacity: 1,
+      shader: 'flat',
+      position: `0 ${MONITOR1_UI_EDIT.envBarY} 0.002`,
+    });
+
+    const cypLabel = m1CreateEntity('a-entity', {
+      position: `0 ${MONITOR1_UI_EDIT.cypLabelY} 0.002`,
+    });
+
+    const cypTrack = m1CreateEntity('a-plane', {
+      width: MONITOR1_UI_EDIT.settingsBarTrackWidth,
+      height: MONITOR1_UI_EDIT.settingsBarTrackHeight,
+      color: MONITOR1_THEME.track,
+      opacity: 1,
+      shader: 'flat',
+      position: `0 ${MONITOR1_UI_EDIT.cypBarY} 0.001`,
+    });
+
+    const cypFill = m1CreateEntity('a-plane', {
+      width: 0.001,
+      height: MONITOR1_UI_EDIT.settingsBarTrackHeight,
+      color: MONITOR1_THEME.accentWarm,
+      opacity: 1,
+      shader: 'flat',
+      position: `0 ${MONITOR1_UI_EDIT.cypBarY} 0.002`,
+    });
+
+    group.appendChild(glow);
+    group.appendChild(back);
+    group.appendChild(title);
+    group.appendChild(envLabel);
+    group.appendChild(envTrack);
+    group.appendChild(envFill);
+    group.appendChild(cypLabel);
+    group.appendChild(cypTrack);
+    group.appendChild(cypFill);
+
+    return {
+      group,
+      glow,
+      back,
+      title,
+      envLabel,
+      envTrack,
+      envFill,
+      cypLabel,
+      cypTrack,
+      cypFill,
+    };
   },
 
   setTextBlock(el, value, color, width, wrapCount, scale = '1 1 1', lineHeight = 50) {
@@ -238,6 +366,66 @@ AFRAME.registerComponent('monitor1-ui', {
       baseline: 'center',
       lineHeight
     });
+  },
+
+  setBarFill(fillEl, value, maxWidth, centerY, color) {
+    const safeValue = m1Clamp(value, 0, 1);
+    const width = Math.max(0.001, maxWidth * safeValue);
+    const leftEdge = -maxWidth / 2;
+    const centerX = leftEdge + width / 2;
+
+    fillEl.setAttribute('width', width);
+    fillEl.setAttribute('color', color);
+    fillEl.setAttribute('position', `${centerX} ${centerY} 0.002`);
+    fillEl.setAttribute('visible', safeValue > 0);
+  },
+
+  updateSettingsCard() {
+    const envValue = m1Clamp(this.environmentBrightness, 0, 1);
+    const cypValue = m1Clamp(this.cypOpacity, 0, 1);
+
+    this.setTextBlock(
+      this.settingsCard.title,
+      'CURRENT VALUES',
+      MONITOR1_THEME.subtitle,
+      0.92,
+      18,
+      '0.78 0.78 0.78'
+    );
+
+    this.setTextBlock(
+      this.settingsCard.envLabel,
+      `Environment brightness: ${m1Percent(envValue)}`,
+      MONITOR1_THEME.body,
+      1.04,
+      34,
+      '0.68 0.68 0.68'
+    );
+
+    this.setTextBlock(
+      this.settingsCard.cypLabel,
+      `CYP450 opacity: ${m1Percent(cypValue)}`,
+      MONITOR1_THEME.body,
+      1.04,
+      34,
+      '0.68 0.68 0.68'
+    );
+
+    this.setBarFill(
+      this.settingsCard.envFill,
+      envValue,
+      MONITOR1_UI_EDIT.settingsBarTrackWidth,
+      MONITOR1_UI_EDIT.envBarY,
+      MONITOR1_THEME.accent
+    );
+
+    this.setBarFill(
+      this.settingsCard.cypFill,
+      cypValue,
+      MONITOR1_UI_EDIT.settingsBarTrackWidth,
+      MONITOR1_UI_EDIT.cypBarY,
+      MONITOR1_THEME.accentWarm
+    );
   },
 
   getMonitor2Component() {
@@ -267,6 +455,7 @@ AFRAME.registerComponent('monitor1-ui', {
         body: 'Use this screen to control the lesson.',
         showBadge: false,
         showPreview: false,
+        showSettingsCard: false,
         previewTitle: '',
         previewBody: '',
         buttons: [
@@ -282,6 +471,7 @@ AFRAME.registerComponent('monitor1-ui', {
         body: '',
         showBadge: false,
         showPreview: false,
+        showSettingsCard: false,
         previewTitle: '',
         previewBody: '',
         buttons: [
@@ -301,6 +491,7 @@ AFRAME.registerComponent('monitor1-ui', {
         body: 'Monitor 2 shows the CYP450 overview.',
         showBadge: false,
         showPreview: false,
+        showSettingsCard: false,
         previewTitle: '',
         previewBody: '',
         buttons: [
@@ -319,6 +510,7 @@ AFRAME.registerComponent('monitor1-ui', {
         body: 'Monitor 2 shows ADME information.',
         showBadge: false,
         showPreview: false,
+        showSettingsCard: false,
         previewTitle: '',
         previewBody: '',
         buttons: [
@@ -337,6 +529,7 @@ AFRAME.registerComponent('monitor1-ui', {
         body: 'Monitor 2 shows the project credits.',
         showBadge: false,
         showPreview: false,
+        showSettingsCard: false,
         previewTitle: '',
         previewBody: '',
         buttons: [
@@ -353,11 +546,10 @@ AFRAME.registerComponent('monitor1-ui', {
         subtitle: 'Scene controls',
         body: '',
         showBadge: false,
-        showPreview: true,
-        previewTitle: 'CURRENT VALUES',
-        previewBody:
-          `Environment brightness: ${Math.round(this.environmentBrightness * 100)}%\n` +
-          `CYP450 opacity: ${Math.round(this.cypOpacity * 100)}%`,
+        showPreview: false,
+        showSettingsCard: true,
+        previewTitle: '',
+        previewBody: '',
         buttons: [
           { label: 'ENV -', action: 'env-minus', x: -0.26, y: -0.18, width: 0.34, height: 0.11 },
           { label: 'ENV +', action: 'env-plus', x: 0.26, y: -0.18, width: 0.34, height: 0.11 },
@@ -379,6 +571,7 @@ AFRAME.registerComponent('monitor1-ui', {
       body: '',
       showBadge: true,
       showPreview: true,
+      showSettingsCard: false,
       previewTitle: 'NEXT STEP',
       previewBody: nextTitle,
       previewAction: 'next-step',
@@ -396,7 +589,9 @@ AFRAME.registerComponent('monitor1-ui', {
     this.stepBadgeBack.setAttribute('visible', !!screenData.showBadge);
     this.stepBadgeText.setAttribute('visible', !!screenData.showBadge);
     this.previewCard.group.setAttribute('visible', !!screenData.showPreview);
+    this.settingsCard.group.setAttribute('visible', !!screenData.showSettingsCard);
     this.previewCard.group._action = screenData.previewAction || null;
+
     const showBody = !!screenData.body;
     this.bodyText.setAttribute('visible', showBody);
 
@@ -411,7 +606,7 @@ AFRAME.registerComponent('monitor1-ui', {
     } else if (this.screen === 'settings') {
       this.titleText.setAttribute('position', '0 0.22 0.003');
       this.subtitleText.setAttribute('position', '0 0.10 0.003');
-      this.previewCard.group.setAttribute('position', '0 -0.05 0.003');
+      this.settingsCard.group.setAttribute('position', `0 ${MONITOR1_UI_EDIT.settingsCardY} 0.003`);
     } else if (this.screen === 'metabolism') {
       this.titleText.setAttribute('position', '0 0.18 0.003');
       this.subtitleText.setAttribute('position', '0 0.05 0.003');
@@ -479,6 +674,10 @@ AFRAME.registerComponent('monitor1-ui', {
           '0.82 0.82 0.82'
         );
       }
+    }
+
+    if (screenData.showSettingsCard) {
+      this.updateSettingsCard();
     }
 
     this.renderButtons(screenData.buttons || []);
@@ -550,13 +749,19 @@ AFRAME.registerComponent('monitor1-ui', {
 
     wrapper.addEventListener('mouseenter', hoverOn);
     wrapper.addEventListener('mouseleave', hoverOff);
+    glow.addEventListener('mouseenter', hoverOn);
+    glow.addEventListener('mouseleave', hoverOff);
     face.addEventListener('mouseenter', hoverOn);
     face.addEventListener('mouseleave', hoverOff);
     text.addEventListener('mouseenter', hoverOn);
     text.addEventListener('mouseleave', hoverOff);
 
-    const clickHandler = () => this.handleAction(buttonData.action);
-    wrapper.addEventListener('click', clickHandler);
+    const clickHandler = (evt) => {
+      if (evt) evt.stopPropagation();
+      this.handleAction(buttonData.action);
+    };
+
+    glow.addEventListener('click', clickHandler);
     face.addEventListener('click', clickHandler);
     text.addEventListener('click', clickHandler);
 
@@ -565,6 +770,34 @@ AFRAME.registerComponent('monitor1-ui', {
 
   handleAction(action) {
     if (action === 'open-main') {
+      const musicEl = document.getElementById('sceneMusic');
+
+      if (musicEl && musicEl.components.sound) {
+        const soundComp = musicEl.components.sound;
+
+        if (!soundComp.isPlaying) {
+          musicEl.setAttribute('sound', 'volume', 0);
+          soundComp.playSound();
+
+          const targetVolume = 0.35;
+          const fadeDuration = 3000;
+          const fadeSteps = 30;
+          const stepTime = fadeDuration / fadeSteps;
+          let currentStep = 0;
+
+          const fadeInterval = setInterval(() => {
+            currentStep++;
+            const newVolume = (targetVolume * currentStep) / fadeSteps;
+            musicEl.setAttribute('sound', 'volume', newVolume);
+
+            if (currentStep >= fadeSteps) {
+              musicEl.setAttribute('sound', 'volume', targetVolume);
+              clearInterval(fadeInterval);
+            }
+          }, stepTime);
+        }
+      }
+
       this.screen = 'main-menu';
       this.setMonitor2Screen('main-menu');
       this.emitSceneEvent('monitor-control-open-main-menu');
@@ -630,49 +863,98 @@ AFRAME.registerComponent('monitor1-ui', {
 
     if (action === 'open-metabolism') {
       this.screen = 'metabolism';
-      this.setMonitor2Screen('metabolism');
-      this.setMonitor2Step(this.metabolismStep);
+      this.metabolismStep = 0;
+      this.setMonitor2Step(0);
+      this.setMonitor2Screen('metabolism_intro');
+
       this.emitSceneEvent('monitor-control-open-metabolism', {
-        stepIndex: this.metabolismStep,
+        stepIndex: 0,
       });
+
       this.render();
       return;
     }
 
     if (action === 'next-step') {
-      if (this.metabolismStep < MONITOR1_STEP_TITLES.length - 1) {
-        this.metabolismStep += 1;
+
+      const monitor2 = this.getMonitor2Component();
+      const currentScreen = monitor2?.state?.screen;
+
+      // 👉 If we are in intro → go to step 1
+      if (currentScreen === 'metabolism_intro') {
+        this.metabolismStep = 0;
+        this.setMonitor2Step(0);
+        this.setMonitor2Screen('metabolism');
+
+        this.emitSceneEvent('monitor-control-replay-step', {
+          stepIndex: 0,
+        });
+
+        this.render();
+        return;
       }
-      this.setMonitor2Screen('metabolism');
+
+      // 👉 If last step → go to clinical screen
+      if (this.metabolismStep >= MONITOR1_STEP_TITLES.length - 1) {
+        this.setMonitor2Screen('metabolism_clinical_impact');
+        this.render();
+        return;
+      }
+
+      // 👉 Normal next step
+      this.metabolismStep++;
+
       this.setMonitor2Step(this.metabolismStep);
+      this.setMonitor2Screen('metabolism');
+
       this.emitSceneEvent('monitor-control-next-step', {
         stepIndex: this.metabolismStep,
       });
+
       this.render();
       return;
     }
 
     if (action === 'back-step') {
-      if (this.metabolismStep > 0) {
-        this.metabolismStep -= 1;
+
+      const monitor2 = this.getMonitor2Component();
+      const currentScreen = monitor2?.state?.screen;
+
+      // 👉 If in clinical screen → go back to last step
+      if (currentScreen === 'metabolism_clinical_impact') {
+        this.setMonitor2Screen('metabolism');
+        this.setMonitor2Step(this.metabolismStep);
+        this.render();
+        return;
       }
-      this.setMonitor2Screen('metabolism');
+
+      if (this.metabolismStep > 0) {
+        this.metabolismStep--;
+      }
+
       this.setMonitor2Step(this.metabolismStep);
+      this.setMonitor2Screen('metabolism');
+
       this.emitSceneEvent('monitor-control-back-step', {
         stepIndex: this.metabolismStep,
       });
+
       this.render();
       return;
     }
 
     if (action === 'replay-step') {
       this.metabolismStep = 0;
-      this.setMonitor2Screen('metabolism');
-      this.setMonitor2Step(this.metabolismStep);
+      this.screen = 'metabolism';
+      this.setMonitor2Step(0);
+      this.setMonitor2Screen('metabolism_intro');
+
       this.emitSceneEvent('monitor-control-replay-step', {
-        stepIndex: this.metabolismStep,
+        stepIndex: 0,
       });
+
       this.render();
+      return;
     }
   },
 
@@ -688,9 +970,12 @@ AFRAME.registerComponent('monitor1-ui', {
   },
 
   setSettingsValues(environmentBrightness, cypOpacity) {
-    this.environmentBrightness = environmentBrightness;
-    this.cypOpacity = cypOpacity;
-    this.render();
+    this.environmentBrightness = m1Clamp(environmentBrightness, 0, 1);
+    this.cypOpacity = m1Clamp(cypOpacity, 0, 1);
+
+    if (this.screen === 'settings') {
+      this.updateSettingsCard();
+    }
   },
 
   emitSceneEvent(eventName, detail = {}) {

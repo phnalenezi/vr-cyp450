@@ -7,12 +7,12 @@
         lightId: 'inducerSpotLight',
 
         enabled: true,
-        targetPosition: '-0.90 0.820 0.030',
-        lightPosition: '-0.90 1.850 0.030',
+        targetPosition: '-1.10 0.820 -0.08500',
+        lightPosition: '-1.10 1.850 -0.08500',
 
         color: '#8cf0a5',
         intensity: 2.4,
-        angle: 30,
+        angle: 40,
         penumbra: 0.7,
         decay: 1.4,
         distance: 3.4,
@@ -25,12 +25,12 @@
         lightId: 'normalSpotLight',
 
         enabled: true,
-        targetPosition: '0.0 0.820 0.030',
-        lightPosition: '0.0 1.850 0.030',
+        targetPosition: '0.0 0.820 -0.08500',
+        lightPosition: '0.0 1.850 -0.08500',
 
         color: '#dfe9ff',
         intensity: 2.35,
-        angle: 30,
+        angle: 40,
         penumbra: 0.7,
         decay: 1.4,
         distance: 3.4,
@@ -43,12 +43,12 @@
         lightId: 'inhibitorSpotLight',
 
         enabled: true,
-        targetPosition: '0.9000 0.820 0.030',
-        lightPosition: '0.9000 1.850 0.030',
+        targetPosition: '1.0880 0.820 -0.08500',
+        lightPosition: '1.08800 1.850 -0.0850',
 
         color: '#ff9b9b',
         intensity: 2.4,
-        angle: 30,
+        angle: 40,
         penumbra: 0.7,
         decay: 1.4,
         distance: 3.4,

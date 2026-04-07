@@ -17,8 +17,11 @@ AFRAME.registerComponent('cyp-scene-manager', {
       heme: document.getElementById('heme'),
       monitorRig: document.getElementById('monitorRig'),
       monitor: document.getElementById('monitor'),
+      monitor2: document.getElementById('monitor2'),
       monitorUiAnchor: document.getElementById('monitorUiAnchor'),
+      monitor2UiAnchor: document.getElementById('monitor2UiAnchor'),
       monitor1UiRoot: document.getElementById('monitor1UiRoot'),
+      monitor2UiRoot: document.getElementById('monitor2UiRoot'),
       comparisonRig: document.getElementById('comparisonRig'),
       inducerBoxGroup: document.getElementById('inducerBoxGroup'),
       normalBoxGroup: document.getElementById('normalBoxGroup'),
@@ -106,7 +109,7 @@ AFRAME.registerComponent('cyp-scene-manager', {
 
     const sceneVisualControls = {
       envBrightness: 1.0,
-      cypOpacity: 0.07,
+      cypOpacity: 1.0,
       envMaterials: [],
       envValueText: null,
       cypValueText: null,
@@ -163,15 +166,18 @@ AFRAME.registerComponent('cyp-scene-manager', {
 
       updateSceneControlReadouts();
     }
-
-    function applyCypOpacity() {
+    function applyCypOpacity(instant = false, dur = EDIT.TIMING.cypFade) {
       const targetOpacity = clamp(sceneVisualControls.cypOpacity, 0, 1);
 
       sceneVisualControls.cypOpacity = targetOpacity;
       EDIT.SCENE.cypOpacity = targetOpacity;
 
       if (refs.cyp) {
-        setModelOpacityRecursive(refs.cyp, targetOpacity, 1);
+        if (instant) {
+          setModelOpacityRecursive(refs.cyp, targetOpacity, 1);
+        } else {
+          animateModelOpacity(refs.cyp, targetOpacity, dur, false);
+        }
       }
 
       updateSceneControlReadouts();
@@ -303,11 +309,10 @@ AFRAME.registerComponent('cyp-scene-manager', {
         rotation: '-56.800 -30.000 0.000',
         scale: '0.640 0.580 0.700'
       },
-
       MONITOR2_ROOT: {
-        position: '1.240 -0.530 0.030',
-        rotation: '-90.000 90.000 0.000',
-        scale: '0.640 0.580 0.700'
+        position: '0 0 0',
+        rotation: '0 0 0',
+        scale: '1 1 1'
       },
 
       UI: {
@@ -337,9 +342,9 @@ AFRAME.registerComponent('cyp-scene-manager', {
       },
 
       MONITOR: {
-        rigPosition: '-9.5 0.880 -2.495',
-        rigRotation: '0.000 80.000 0.000',
-        rigScale: '2 2 2',
+        rigPosition: '-10.50 0.880 8.50',
+        rigRotation: '0.000 130.000 0.000',
+        rigScale: '3 3 3',
         modelPosition: '0.180 -0.120 3.940',
         modelRotation: '0.000 -120.000 1.200',
         modelScale: '0.017 0.017 0.017',
@@ -377,10 +382,10 @@ AFRAME.registerComponent('cyp-scene-manager', {
       },
 
       SCENE: {
-        focusRigPosition: '-2.6 1 -0.9',
-        focusRigRotation: '0.000 90.000 -5.00',
+        focusRigPosition: '-2.5 1.5 -0.55',
+        focusRigRotation: '15.000 95.000 -5.00',
         focusRigScale: '0.9 0.9 0.9',
-        cypOpacity: 0.07,
+        cypOpacity: 0.80,
         hemeScale: '0.100 0.100 0.100',
         drugScale: '0.090 0.090 0.090',
         hideYellowHemeParts: true
@@ -459,19 +464,19 @@ AFRAME.registerComponent('cyp-scene-manager', {
       POSES: {
         mainDrug: {
           // Step 1: starting position
-          A: { position: '1.210 0.300 0.000', rotation: '0 -90 90' },
+          A: { position: '1.210 0.300 0.000', rotation: '5 -90 105' },
 
           // Step 2: approaching
           B: { position: '0.510 0.300 0.500', rotation: '0 -280 90' },
 
-          // Step 3 to Step 9: binding / active-site pose
-          C: { position: '0.050 0.200 0.250', rotation: '130 -290 0' },
+          // Step 3 to Step 11: active-site pose
+          C: { position: '0.050 0.200 0.250', rotation: '130 -256 0' },
 
-          // Step 10: releasing
-          D: { position: '0.150 0.200 0.450', rotation: '130 -290 0' },
+          // Step 12: small release from the active site
+          D: { position: '0.150 0.200 0.450', rotation: '130 -256 0' },
 
-          // Step 11: flying away
-          E: { position: '-1.050 0.100 0.000', rotation: '180 -270 -90' }
+          // Step 12: fly away after release
+          E: { position: '-1.050 0.50 0.000', rotation: '180 -270 -80' }
         },
 
         water: {
@@ -556,6 +561,8 @@ AFRAME.registerComponent('cyp-scene-manager', {
     };
 
     const infoPanelBg = refs.infoPanel ? refs.infoPanel.querySelector('a-plane') : null;
+
+    let currentStep = 0;
 
     function parseVec3(value) {
       if (typeof value === 'string') {
@@ -1825,8 +1832,367 @@ AFRAME.registerComponent('cyp-scene-manager', {
       refs.activeSiteRing.setAttribute('material', 'emissiveIntensity', 0.85);
       refs.activeSiteRing.setAttribute('material', 'opacity', ringOpacity);
     }
+    const sceneLabelFx = {
+      root: null,
+      entries: {},
+      rafId: null,
+      started: false
+    };
+
+    function ensureSceneLabelRoot() {
+      if (sceneLabelFx.root) return sceneLabelFx.root;
+
+      let root = document.getElementById('sceneLabelRoot');
+      if (!root) {
+        root = document.createElement('a-entity');
+        root.setAttribute('id', 'sceneLabelRoot');
+        scene.appendChild(root);
+      }
+
+      sceneLabelFx.root = root;
+      return root;
+    }
+
+    function createHoverLabel(labelId, labelText) {
+      let label = document.getElementById(labelId);
+      if (label) return label;
+
+      const root = ensureSceneLabelRoot();
+
+      label = document.createElement('a-entity');
+      label.setAttribute('id', labelId);
+      label.setAttribute('visible', false);
+      label.setAttribute('scale', '0.14 0.14 0.14');
+
+      const bg = document.createElement('a-plane');
+      bg.setAttribute('width', '1.05');
+      bg.setAttribute('height', '0.20');
+      bg.setAttribute(
+        'material',
+        'shader: flat; color: #07131d; transparent: true; opacity: 0.68; side: double;'
+      );
+      bg.setAttribute('position', '0 0 0');
+
+      const text = document.createElement('a-text');
+      text.setAttribute('value', labelText);
+      text.setAttribute('align', 'center');
+      text.setAttribute('anchor', 'center');
+      text.setAttribute('baseline', 'center');
+      text.setAttribute('color', '#ecfbff');
+      text.setAttribute('width', '2.15');
+      text.setAttribute('wrap-count', '20');
+      text.setAttribute('position', '0 0 0.01');
+
+      label.appendChild(bg);
+      label.appendChild(text);
+      root.appendChild(label);
+
+      setPrimitiveOpacityRecursive(label, 0);
+      return label;
+    }
+
+    function upsertSceneLabelEntry(key, config) {
+      if (!config?.target) return;
+
+      const label = createHoverLabel(`${key}SceneLabel`, config.text);
+
+      sceneLabelFx.entries[key] = {
+        key,
+        target: config.target,
+        label,
+        offsetWorld: (config.offsetWorld || new THREE.Vector3(0, 0.12, 0)).clone(),
+        isVisibleByRule: typeof config.isVisibleByRule === 'function' ? config.isVisibleByRule : null,
+        hoverTargets: Array.isArray(config.hoverTargets)
+          ? config.hoverTargets.filter(Boolean)
+          : [config.target].filter(Boolean),
+        hoverBound: false
+      };
+
+      bindSceneLabelHover(sceneLabelFx.entries[key]);
+    }
+
+    function bindSceneLabelHover(entry) {
+      if (!entry || entry.hoverBound) return;
+
+      entry.hoverTargets.forEach((hoverTarget) => {
+        if (!hoverTarget) return;
+
+        hoverTarget.classList.add('clickable');
+
+        hoverTarget.addEventListener('mouseenter', () => {
+          const targetVisible =
+            entry.target?.getAttribute('visible') !== false &&
+            entry.target?.object3D?.visible !== false;
+
+          const allowedByRule = entry.isVisibleByRule ? entry.isVisibleByRule() : true;
+
+          if (!targetVisible || !allowedByRule) return;
+          showSceneLabel(entry.key, 3000);
+        });
+      });
+
+      entry.hoverBound = true;
+    }
+
+    function hideSceneLabelNow(key) {
+      const entry = sceneLabelFx.entries[key];
+      if (!entry || !entry.label) return;
+
+      const label = entry.label;
+
+      if (label.__labelTimer) {
+        clearTimeout(label.__labelTimer);
+        label.__labelTimer = null;
+      }
+
+      stopEntityMotion(label);
+      setPrimitiveOpacityRecursive(label, 0);
+      label.setAttribute('visible', false);
+    }
+
+    function showSceneLabel(key, durationMs = 3000) {
+      const entry = sceneLabelFx.entries[key];
+      if (!entry || !entry.label || !entry.target) return;
+
+      const targetVisible =
+        entry.target.getAttribute('visible') !== false &&
+        entry.target.object3D?.visible !== false;
+
+      const allowedByRule = entry.isVisibleByRule ? entry.isVisibleByRule() : true;
+
+      if (!targetVisible || !allowedByRule) return;
+
+      const label = entry.label;
+
+      if (label.__labelTimer) {
+        clearTimeout(label.__labelTimer);
+        label.__labelTimer = null;
+      }
+
+      label.setAttribute('visible', true);
+      animatePrimitiveOpacity(label, 1, 300, false);
+
+      label.__labelTimer = window.setTimeout(() => {
+        animatePrimitiveOpacity(label, 0, 450, true);
+        label.__labelTimer = null;
+      }, durationMs);
+    }
+
+    function updateSceneLabels() {
+      if (!sceneLabelFx.started) return;
+
+      const cameraWorld = new THREE.Vector3();
+      if (refs.camera?.object3D) {
+        refs.camera.object3D.getWorldPosition(cameraWorld);
+      }
+
+      Object.values(sceneLabelFx.entries).forEach((entry) => {
+        if (!entry?.target?.object3D || !entry?.label?.object3D) return;
+
+        const targetVisible =
+          entry.target.getAttribute('visible') !== false &&
+          entry.target.object3D.visible !== false;
+
+        const allowedByRule = entry.isVisibleByRule ? entry.isVisibleByRule() : true;
+        const shouldTrack = targetVisible && allowedByRule;
+
+        if (!shouldTrack) {
+          hideSceneLabelNow(entry.key);
+          return;
+        }
+
+        const worldPos = getEntityWorldPosition(entry.target).clone().add(entry.offsetWorld);
+        const localPos = worldPos.clone();
+
+        if (entry.label.object3D.parent) {
+          entry.label.object3D.parent.worldToLocal(localPos);
+        }
+
+        entry.label.object3D.position.copy(localPos);
+        entry.label.setAttribute('position', vecToStr(localPos));
+
+        entry.label.object3D.lookAt(cameraWorld);
+      });
+
+      sceneLabelFx.rafId = requestAnimationFrame(updateSceneLabels);
+    }
+
+    function startSceneLabelUpdater() {
+      if (sceneLabelFx.started) return;
+      sceneLabelFx.started = true;
+      updateSceneLabels();
+    }
+
+    function setupSceneLabels() {
+      const restingParts = helpers.restingWater?._parts || {};
+      const o2Parts = helpers.o2Group?._parts || {};
+
+      upsertSceneLabelEntry('cypLabel', {
+        target: refs.cyp,
+        text: 'CYP450 Enzyme',
+        offsetWorld: new THREE.Vector3(0.032, 0.24, 0),
+        isVisibleByRule: () => true,
+        hoverTargets: [refs.cyp]
+      });
+
+      upsertSceneLabelEntry('hemeLabel', {
+        target: refs.heme,
+        text: 'Heme',
+        offsetWorld: new THREE.Vector3(0.03, 0.13, 0),
+        isVisibleByRule: () => true,
+        hoverTargets: [refs.heme]
+      });
+
+      upsertSceneLabelEntry('waterLabel', {
+        target: restingParts.oxygen,
+        text: 'Water',
+        offsetWorld: new THREE.Vector3(0.03, 0.11, 0),
+        isVisibleByRule: () =>
+          helpers.restingWater.getAttribute('visible') !== false &&
+          restingParts.oxygen?.getAttribute('visible') !== false,
+        hoverTargets: [
+          restingParts.oxygen,
+          restingParts.hydrogen1,
+          restingParts.hydrogen2,
+          helpers.restingWater
+        ]
+      });
+
+      upsertSceneLabelEntry('apapLabel', {
+        target: refs.apapStatic,
+        text: 'Acetaminophen',
+        offsetWorld: new THREE.Vector3(0.03, 0.18, 0),
+        isVisibleByRule: () => currentStep <= 9,
+        hoverTargets: [
+          refs.apapStatic,
+          refs.apapOPhenol,
+          refs.apapHPhenol,
+          refs.apapNAmide,
+          refs.apapHAmide
+        ]
+      });
+
+      upsertSceneLabelEntry('napqiLabel', {
+        target: refs.apapStatic,
+        text: 'NAPQI (toxic)',
+        offsetWorld: new THREE.Vector3(0.03, 0.18, 0),
+        isVisibleByRule: () => currentStep >= 10,
+        hoverTargets: [
+          refs.apapStatic,
+          refs.apapOPhenol,
+          refs.apapNAmide,
+          refs.sigmaApapC1O,
+          refs.sigmaApapC4N
+        ]
+      });
+
+      upsertSceneLabelEntry('electron1Label', {
+        target: helpers.electron1,
+        text: 'Electron',
+        offsetWorld: new THREE.Vector3(0.03, 0.08, 0),
+        isVisibleByRule: () => helpers.electron1.getAttribute('visible') !== false,
+        hoverTargets: [helpers.electron1]
+      });
+
+      upsertSceneLabelEntry('electron2Label', {
+        target: helpers.electron2,
+        text: 'Electron',
+        offsetWorld: new THREE.Vector3(0.03, 0.08, 0),
+        isVisibleByRule: () => helpers.electron2.getAttribute('visible') !== false,
+        hoverTargets: [helpers.electron2]
+      });
+
+      upsertSceneLabelEntry('proton1Label', {
+        target: helpers.proton1,
+        text: 'Proton',
+        offsetWorld: new THREE.Vector3(0.03, 0.08, 0),
+        isVisibleByRule: () => helpers.proton1.getAttribute('visible') !== false,
+        hoverTargets: [helpers.proton1]
+      });
+
+      upsertSceneLabelEntry('proton2Label', {
+        target: helpers.proton2,
+        text: 'Proton',
+        offsetWorld: new THREE.Vector3(0.03, 0.08, 0),
+        isVisibleByRule: () => helpers.proton2.getAttribute('visible') !== false,
+        hoverTargets: [helpers.proton2]
+      });
+
+      upsertSceneLabelEntry('oxygenLabel', {
+        target: o2Parts.oxygenA,
+        text: 'Oxygen',
+        offsetWorld: new THREE.Vector3(0.03, 0.10, 0),
+        isVisibleByRule: () =>
+          helpers.o2Group.getAttribute('visible') !== false &&
+          o2Parts.oxygenA?.getAttribute('visible') !== false,
+        hoverTargets: [o2Parts.oxygenA, o2Parts.oxygenB, helpers.o2Group]
+      });
+
+      upsertSceneLabelEntry('oxoLabel', {
+        target: helpers.oxoSpecies,
+        text: 'Reactive Oxygen',
+        offsetWorld: new THREE.Vector3(0.03, 0.09, 0),
+        isVisibleByRule: () => helpers.oxoSpecies.getAttribute('visible') !== false,
+        hoverTargets: [helpers.oxoSpecies]
+      });
+
+      startSceneLabelUpdater();
+    }
+
+    function triggerStepLabels(index) {
+      hideSceneLabelNow('apapLabel');
+      hideSceneLabelNow('napqiLabel');
+      hideSceneLabelNow('waterLabel');
+      hideSceneLabelNow('oxygenLabel');
+      hideSceneLabelNow('electron1Label');
+      hideSceneLabelNow('electron2Label');
+      hideSceneLabelNow('proton1Label');
+      hideSceneLabelNow('proton2Label');
+      hideSceneLabelNow('oxoLabel');
+
+      if (index === 0) {
+        showSceneLabel('cypLabel', 3000);
+        showSceneLabel('hemeLabel', 3000);
+        showSceneLabel('waterLabel', 3000);
+        showSceneLabel('apapLabel', 3000);
+      }
+
+      if (index === 3) {
+        showSceneLabel('electron1Label', 3000);
+      }
+
+      if (index === 4) {
+        showSceneLabel('oxygenLabel', 3000);
+      }
+
+      if (index === 5) {
+        showSceneLabel('electron2Label', 3000);
+      }
+
+      if (index === 6) {
+        showSceneLabel('proton1Label', 3000);
+      }
+
+      if (index === 7) {
+        showSceneLabel('proton2Label', 3000);
+      }
+
+      if (index === 8) {
+        showSceneLabel('oxygenLabel', 3000);
+      }
+
+      if (index === 9) {
+        showSceneLabel('oxoLabel', 3000);
+      }
+
+      if (index === 10) {
+        showSceneLabel('napqiLabel', 3000);
+      }
+    }
 
     const helpers = createHelperEntities(refs.focusRig || scene);
+
+    setupSceneLabels();
 
     function setEntityOpacityNowModel(entity, opacity) {
       if (!entity) return;
@@ -1978,14 +2344,14 @@ AFRAME.registerComponent('cyp-scene-manager', {
         return;
       }
 
-      // First small release move
-      applyMainDrugPose('D', false, 1600);
+      // Step 12 part 1: small release away from the active site
+      applyMainDrugPose('D', false, 1800);
 
-      // Then fly farther away
+      // Step 12 part 2: product fully leaves the scene
       refs.drugGroup.__releaseTimer = window.setTimeout(() => {
-        applyMainDrugPose('E', false, EDIT.TIMING.longMove);
+        applyMainDrugPose('E', false, 3200);
         refs.drugGroup.__releaseTimer = null;
-      }, 1650);
+      }, 1900);
     }
 
 
@@ -3153,6 +3519,355 @@ AFRAME.registerComponent('cyp-scene-manager', {
       };
     }
     const browserEditor = createBrowserTransformEditor();
+
+    // =========================================================
+    // MOBILE TOUCH NAVIGATION + SCENE PRESET BUTTONS
+    // - touch D-pad for phone/tablet browser movement
+    // - preset buttons to jump to important lesson areas
+    // =========================================================
+
+    const MOBILE_NAV = {
+      enabled: true,
+      moveSpeed: 1.45,
+      showOnDesktop: false,
+
+      presets: {
+        metabolism: {
+          label: 'CYP450 metabolism',
+          rigPosition: '-0.800 0.000 -0.100',
+          cameraRotation: '0 72 0'
+        },
+        inducer: {
+          label: 'Inducer',
+          rigPosition: '-1.850 0.000 0.950',
+          cameraRotation: '0 110 0'
+        },
+        prodrug: {
+          label: 'Prodrug activation',
+          rigPosition: '-0.500 0.000 1.250',
+          cameraRotation: '0 88 0'
+        },
+        inhibitor: {
+          label: 'Inhibitor',
+          rigPosition: '0.950 0.000 1.050',
+          cameraRotation: '0 58 0'
+        }
+      }
+    };
+
+    const mobileNavState = {
+      uiBuilt: false,
+      moveForward: false,
+      moveBack: false,
+      moveLeft: false,
+      moveRight: false,
+      rafId: null,
+      lastTime: performance.now()
+    };
+
+    function isTouchDevice() {
+      return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        navigator.msMaxTouchPoints > 0
+      );
+    }
+
+    function shouldShowMobileNav() {
+      if (!MOBILE_NAV.enabled) return false;
+      if (MOBILE_NAV.showOnDesktop) return true;
+      return isTouchDevice();
+    }
+
+    function setMoveState(key, isDown) {
+      mobileNavState[key] = isDown;
+    }
+
+    function clearAllMoveStates() {
+      mobileNavState.moveForward = false;
+      mobileNavState.moveBack = false;
+      mobileNavState.moveLeft = false;
+      mobileNavState.moveRight = false;
+    }
+
+    function moveRigOnXZ(forwardAmount, rightAmount, dt) {
+      if (!refs.rig || !refs.camera || !refs.rig.object3D || !refs.camera.object3D) return;
+
+      const speed = MOBILE_NAV.moveSpeed;
+      const yaw = refs.camera.object3D.rotation.y;
+
+      const forward = new THREE.Vector3(0, 0, -1);
+      forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      forward.y = 0;
+      forward.normalize();
+
+      const right = new THREE.Vector3(1, 0, 0);
+      right.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      right.y = 0;
+      right.normalize();
+
+      const delta = new THREE.Vector3();
+      delta.addScaledVector(forward, forwardAmount * speed * dt);
+      delta.addScaledVector(right, rightAmount * speed * dt);
+
+      refs.rig.object3D.position.add(delta);
+      refs.rig.setAttribute('position', vecToStr(refs.rig.object3D.position));
+    }
+
+    function updateMobileTouchMovement(now) {
+      const dt = Math.min(0.05, (now - mobileNavState.lastTime) / 1000);
+      mobileNavState.lastTime = now;
+
+      let forwardAmount = 0;
+      let rightAmount = 0;
+
+      if (mobileNavState.moveForward) forwardAmount += 1;
+      if (mobileNavState.moveBack) forwardAmount -= 1;
+      if (mobileNavState.moveRight) rightAmount += 1;
+      if (mobileNavState.moveLeft) rightAmount -= 1;
+
+      if (forwardAmount !== 0 || rightAmount !== 0) {
+        const length = Math.hypot(forwardAmount, rightAmount);
+        if (length > 1) {
+          forwardAmount /= length;
+          rightAmount /= length;
+        }
+
+        moveRigOnXZ(forwardAmount, rightAmount, dt);
+      }
+
+      mobileNavState.rafId = requestAnimationFrame(updateMobileTouchMovement);
+    }
+
+    function startMobileTouchLoop() {
+      if (mobileNavState.rafId) return;
+      mobileNavState.lastTime = performance.now();
+      mobileNavState.rafId = requestAnimationFrame(updateMobileTouchMovement);
+    }
+
+    function smoothMoveRigAndCamera(targetRigPosition, targetCameraRotation, dur = 900) {
+      if (!refs.rig || !refs.camera) return;
+
+      const startRig = refs.rig.object3D.position.clone();
+      const endRig = parseVec3(targetRigPosition);
+
+      const startRot = parseVec3(refs.camera.getAttribute('rotation') || '0 0 0');
+      const endRot = parseVec3(targetCameraRotation);
+
+      const startTime = performance.now();
+
+      function frame(now) {
+        const rawT = Math.min(1, (now - startTime) / dur);
+        const t = easeInOut(rawT);
+
+        const nextRig = lerpVec3(startRig, endRig, t);
+
+        const nextRot = new THREE.Vector3(
+          THREE.MathUtils.lerp(startRot.x, endRot.x, t),
+          THREE.MathUtils.lerp(startRot.y, endRot.y, t),
+          THREE.MathUtils.lerp(startRot.z, endRot.z, t)
+        );
+
+        refs.rig.object3D.position.copy(nextRig);
+        refs.rig.setAttribute('position', vecToStr(nextRig));
+        refs.camera.setAttribute(
+          'rotation',
+          `${nextRot.x.toFixed(1)} ${nextRot.y.toFixed(1)} ${nextRot.z.toFixed(1)}`
+        );
+
+        if (rawT < 1) {
+          requestAnimationFrame(frame);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function goToMobilePreset(presetKey) {
+      const preset = MOBILE_NAV.presets[presetKey];
+      if (!preset) return;
+
+      clearAllMoveStates();
+
+      smoothMoveRigAndCamera(
+        preset.rigPosition,
+        preset.cameraRotation,
+        950
+      );
+    }
+
+    function createMobileButton(label, extraStyle = {}) {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+
+      Object.assign(btn.style, {
+        border: '1px solid rgba(255,255,255,0.22)',
+        background: 'rgba(7,19,29,0.88)',
+        color: '#ecfbff',
+        borderRadius: '12px',
+        padding: '10px 12px',
+        fontSize: '14px',
+        fontWeight: '600',
+        lineHeight: '1.1',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none'
+      }, extraStyle);
+
+      btn.addEventListener('touchstart', () => {
+        btn.style.background = 'rgba(24,54,77,0.95)';
+      }, { passive: true });
+
+      btn.addEventListener('touchend', () => {
+        btn.style.background = 'rgba(7,19,29,0.88)';
+      }, { passive: true });
+
+      return btn;
+    }
+
+    function bindHoldButton(button, stateKey) {
+      const pressStart = (event) => {
+        event.preventDefault();
+        setMoveState(stateKey, true);
+      };
+
+      const pressEnd = (event) => {
+        event.preventDefault();
+        setMoveState(stateKey, false);
+      };
+
+      button.addEventListener('touchstart', pressStart, { passive: false });
+      button.addEventListener('touchend', pressEnd, { passive: false });
+      button.addEventListener('touchcancel', pressEnd, { passive: false });
+
+      // Optional mouse support too
+      button.addEventListener('mousedown', pressStart);
+      button.addEventListener('mouseup', pressEnd);
+      button.addEventListener('mouseleave', pressEnd);
+    }
+
+    function buildMobileTouchNavigationUi() {
+      if (mobileNavState.uiBuilt) return;
+      if (!shouldShowMobileNav()) return;
+
+      const root = document.createElement('div');
+      root.id = 'mobile-touch-nav-root';
+
+      Object.assign(root.style, {
+        position: 'fixed',
+        inset: '0',
+        pointerEvents: 'none',
+        zIndex: '999998'
+      });
+
+      // Left D-pad
+      const dpad = document.createElement('div');
+      Object.assign(dpad.style, {
+        position: 'absolute',
+        left: '14px',
+        bottom: '18px',
+        width: '148px',
+        height: '148px',
+        pointerEvents: 'auto'
+      });
+
+      const upBtn = createMobileButton('▲', {
+        position: 'absolute',
+        left: '49px',
+        top: '0px',
+        width: '50px',
+        height: '50px'
+      });
+
+      const leftBtn = createMobileButton('◀', {
+        position: 'absolute',
+        left: '0px',
+        top: '49px',
+        width: '50px',
+        height: '50px'
+      });
+
+      const rightBtn = createMobileButton('▶', {
+        position: 'absolute',
+        right: '0px',
+        top: '49px',
+        width: '50px',
+        height: '50px'
+      });
+
+      const downBtn = createMobileButton('▼', {
+        position: 'absolute',
+        left: '49px',
+        bottom: '0px',
+        width: '50px',
+        height: '50px'
+      });
+
+      bindHoldButton(upBtn, 'moveForward');
+      bindHoldButton(downBtn, 'moveBack');
+      bindHoldButton(leftBtn, 'moveLeft');
+      bindHoldButton(rightBtn, 'moveRight');
+
+      dpad.appendChild(upBtn);
+      dpad.appendChild(leftBtn);
+      dpad.appendChild(rightBtn);
+      dpad.appendChild(downBtn);
+
+      // Right preset buttons
+      const presetWrap = document.createElement('div');
+      Object.assign(presetWrap.style, {
+        position: 'absolute',
+        right: '14px',
+        bottom: '18px',
+        width: '188px',
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gap: '8px',
+        pointerEvents: 'auto'
+      });
+
+      const metabolismBtn = createMobileButton('CYP450 metabolism');
+      metabolismBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        goToMobilePreset('metabolism');
+      });
+
+      const inducerBtn = createMobileButton('Inducer');
+      inducerBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        goToMobilePreset('inducer');
+      });
+
+      const prodrugBtn = createMobileButton('Prodrug activation');
+      prodrugBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        goToMobilePreset('prodrug');
+      });
+
+      const inhibitorBtn = createMobileButton('Inhibitor');
+      inhibitorBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        goToMobilePreset('inhibitor');
+      });
+
+      presetWrap.appendChild(metabolismBtn);
+      presetWrap.appendChild(inducerBtn);
+      presetWrap.appendChild(prodrugBtn);
+      presetWrap.appendChild(inhibitorBtn);
+
+      root.appendChild(dpad);
+      root.appendChild(presetWrap);
+      document.body.appendChild(root);
+
+      mobileNavState.uiBuilt = true;
+      startMobileTouchLoop();
+    }
+    // =========================================================
+    // END MOBILE TOUCH NAVIGATION
+    // =========================================================
+
     // =========================================================
     // INDUCER BOX LOOP ANIMATION
     // - constant particle flow
@@ -5337,7 +6052,7 @@ AFRAME.registerComponent('cyp-scene-manager', {
       }
     ];
 
-    let currentStep = 0;
+
 
     function getMonitor1UiComponent() {
       return refs.monitor1UiRoot?.components?.['monitor1-ui'] || null;
@@ -5394,15 +6109,15 @@ AFRAME.registerComponent('cyp-scene-manager', {
       syncMonitorSettings();
     }
 
-    function setCypOpacitySetting(nextValue) {
+    function setCypOpacitySetting(nextValue, instant = false, dur = EDIT.TIMING.cypFade) {
       sceneVisualControls.cypOpacity = clamp(nextValue, 0.0, 1.0);
-      applyCypOpacity();
+      applyCypOpacity(instant, dur);
       syncMonitorSettings();
     }
 
     function resetVisualSettings() {
       setEnvironmentBrightnessSetting(1.0);
-      setCypOpacitySetting(0.07);
+      setCypOpacitySetting(1.0);
     }
 
     function syncTwoScreenStart() {
@@ -5410,12 +6125,17 @@ AFRAME.registerComponent('cyp-scene-manager', {
       setMonitor2Screen('start');
       syncMonitor1Step(currentStep);
       syncMonitor2Step(currentStep);
+
+      setEnvironmentBrightnessSetting(1.0);
+      setCypOpacitySetting(1.0, true);
+
       syncMonitorSettings();
     }
 
     function bindTwoScreenUiEvents() {
       scene.addEventListener('monitor-control-open-main-menu', () => {
         setMonitor2Screen('main-menu');
+        setCypOpacitySetting(0.05, false, 5000);
         syncMonitorSettings();
       });
 
@@ -5513,15 +6233,51 @@ AFRAME.registerComponent('cyp-scene-manager', {
       applyModelVisuals(step, instant);
       applyDrugPiecesForStep(index, instant);
       applyTransformationPieceFades(index, instant);
+      triggerStepLabels(index);
       setButtonEnabled(refs.btnBack, currentStep > 0, '#1d3557');
       setButtonEnabled(refs.btnNext, currentStep < steps.length - 1, '#2563eb');
       setButtonEnabled(refs.btnReplay, true, '#1d4d4f');
       setButtonEnabled(refs.btnMenu, true, '#4b5563');
     }
 
-    function nextStep() { if (currentStep < steps.length - 1) applyStep(currentStep + 1, false); }
-    function previousStep() { if (currentStep > 0) applyStep(currentStep - 1, false); }
-    function replayScene() { applyStep(0, true); }
+    function nextStep() {
+      if (currentStep < steps.length - 1) {
+        applyStep(currentStep + 1, false);
+      }
+    }
+    function previousStep() {
+      if (currentStep > 0) {
+        applyStep(currentStep - 1, false);
+      }
+    }
+
+    function replayScene() {
+      stopDrugGroupMotion();
+      stopPartsGroupMotion();
+      stopO2Animations();
+      clearHydrogenFlightTimers();
+      clearDrugReleaseTimer();
+      applyStep(currentStep, true);
+    }
+
+    this.nextStep = nextStep;
+    this.prevStep = previousStep;
+    this.previousStep = previousStep;
+    this.replayScene = replayScene;
+
+    function replayScene() {
+      stopDrugGroupMotion();
+      stopPartsGroupMotion();
+      stopO2Animations();
+      clearHydrogenFlightTimers();
+      clearDrugReleaseTimer();
+      applyStep(currentStep, true);
+    }
+
+    this.nextStep = nextStep;
+    this.prevStep = previousStep;
+    this.previousStep = previousStep;
+    this.replayScene = replayScene;
 
     this.nextStep = nextStep;
     this.prevStep = previousStep;
@@ -5749,6 +6505,7 @@ AFRAME.registerComponent('cyp-scene-manager', {
         hideUnusedPiPieces();
         applyStep(0, true);
         syncTwoScreenStart();
+        buildMobileTouchNavigationUi();
         if (refs.focusRig) refs.focusRig.setAttribute('visible', true);
         startInducerLoopWhenReady();
         startInhibitorLoopWhenReady();
